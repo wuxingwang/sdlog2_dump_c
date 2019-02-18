@@ -26,7 +26,7 @@
 #include "sdlog2_format.h"
 
 
-#define MAX_MSG_ITEM 50
+#define MAX_MSG_ITEM 100
 
 #define LOG_VER_MSG 130
 #define LOG_INFO_MSG 135//Custom type, unofficial PX4
@@ -51,9 +51,9 @@ struct log_INFO_s {
 	char geo_ver[16];
 	char res[16];
 	char res2[16];
-	uint16_t uav_type;    //飞机类型，决定喷洒方式
-	uint16_t system_type; //机架类型
-	uint32_t ability;     //能力集
+	uint16_t uav_type;    
+	uint16_t system_type; 
+	uint32_t ability;  
 };
 
 struct msg_format_s{
@@ -262,6 +262,12 @@ uint8_t * write_var_ascii(FILE *p_file, char type, uint8_t *p)
 			fprintf(p_file, "%f", *((float*)p));
 			len = 4;
 			break;
+			
+		case 'd':
+			fprintf(p_file, "%lf", *((double*)p));
+			len = 8;
+			break;
+
 		case 'e':	
 		case 'i':
 		case 'L':
@@ -297,6 +303,7 @@ uint8_t * write_var_ascii(FILE *p_file, char type, uint8_t *p)
 			fprintf(p_file, "%d", (int)*((int16_t*)p));
 			len = 2;
 			break;
+#ifdef __x86_64__
 			
 		case 'Q':
 			/*64bit CPU*/
@@ -309,7 +316,21 @@ uint8_t * write_var_ascii(FILE *p_file, char type, uint8_t *p)
 			fprintf(p_file, "%ld", *((uint64_t*)p));
 			len = 8;
 			break;
+#elif __i386__
+
+		case 'Q':
+			/*32bit CPU*/
+			fprintf(p_file, "%llu", *((uint64_t*)p));
+			len = 8;
+			break;
 			
+		case 'q':
+			/*32bit CPU*/
+			fprintf(p_file, "%lld", *((uint64_t*)p));
+			len = 8;
+			break;
+
+#endif			
 		case 'n':
 			strncpy(buf, (char*)p, 4);
 			buf[4] = '\0';
@@ -388,11 +409,12 @@ int main(int argc, char *argv[])
 	int row_count = 0;
 	int row_count2 = 0;
 	int i = 0;
-	
+
+    
 	if (argc >= 2)
 	{
 		filename_in = argv[1];
-		strncpy(filename_out, filename_in, sizeof(filename_in));
+		strncpy(filename_out, filename_in, sizeof(filename_out));
 		/*考虑改为倒叙搜索*/
 		char *p = strchr(filename_out, '.');
 		if(p == NULL)
