@@ -194,6 +194,8 @@ int write_column_tile(FILE *p_csv_file)
 
 		j = 0;
 		p = labels;
+		
+		/*TODO. strsep do not exists on Windows or gw32,  replace it*/
 		while((token = strsep(&p, ",")) != NULL)
 		{
 			if(msg_table[i].body.format[j] == 0)
@@ -450,6 +452,7 @@ int main(int argc, char *argv[])
 	if(parse_format_msg(p_log_file) < 0)
 	{
 		printf("find find_format_msg faild\n");
+		goto out;
 	}
 
 	write_column_tile(p_csv_file);

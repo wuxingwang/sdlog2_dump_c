@@ -15,7 +15,7 @@ IFLAGS	= -I.
 
 
 CFLAGS += -O -Wall
-LDFLAGS += -lpthread -lm -lrt
+LDFLAGS += -lpthread -lm
 
 all:$(NAME)
 
