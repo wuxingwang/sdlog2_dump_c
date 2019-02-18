@@ -68,6 +68,7 @@ struct msg_format_s{
 
 struct msg_format_s msg_table[MAX_MSG_ITEM];
 int valid_msg_cnt = 0;
+int not_write_csv_msg_cnt = 0;
 
 int parse_format_msg(FILE *p_file)
 {
@@ -132,6 +133,7 @@ int parse_format_msg(FILE *p_file)
 		if (msg_table[idx].body.type == LOG_VER_MSG || msg_table[idx].body.type == LOG_INFO_MSG)
 		{
 			msg_table[idx].not_write_csv = 1;
+			not_write_csv_msg_cnt++;
 		}
 		else
 		{
@@ -179,11 +181,16 @@ int write_column_tile(FILE *p_csv_file)
 	memset(labels,0,sizeof(labels));
 	for( i = 0; i < valid_msg_cnt; i++)
 	{
+		if ( msg_table[i].not_write_csv)
+		{
+			continue;
+		}
 
 		strncpy(name, msg_table[i].body.name, 4);
 		name[sizeof(name)-1] = '\0';
 		strncpy(labels, msg_table[i].body.labels, 64);
 		labels[sizeof(labels)-1] = '\0';
+
 
 		j = 0;
 		p = labels;
@@ -197,7 +204,7 @@ int write_column_tile(FILE *p_csv_file)
 			snprintf(item,sizeof(item), "%s_%s", name, token);
 			//printf("%s\n", item);
 			fwrite(item, 1, strlen(item), p_csv_file);
-			if (i == (valid_msg_cnt - 1) && j == (msg_table[i].struct_number - 1))
+			if (i == (valid_msg_cnt - not_write_csv_msg_cnt - 1) && j == (msg_table[i].struct_number - 1))
 			{
 				fwrite("\r\n",1,2,p_csv_file);
 			}
@@ -370,6 +377,12 @@ int write_row_data_ascii(FILE *p_csv_file)
 	
 	for(i = 0; i < valid_msg_cnt; i++)
 	{
+	
+		if ( msg_table[i].not_write_csv)
+		{
+			continue;
+		}
+		
 		p = (unsigned char *)msg_table[i].p_data;
 		j = 0;
 		while(msg_table[i].body.format[j] != 0 && j < 16)
@@ -381,7 +394,7 @@ int write_row_data_ascii(FILE *p_csv_file)
 				return -1;
 			}
 			//printf("j=%d, struct_number=%d\n", j, msg_table[i].struct_number);
-			if (i == (valid_msg_cnt - 1) && j == (msg_table[i].struct_number - 1))
+			if (i == (valid_msg_cnt - not_write_csv_msg_cnt - 1) && j == (msg_table[i].struct_number - 1))
 			{
 				fwrite("\r\n",1,2,p_csv_file);
 				
@@ -472,12 +485,11 @@ int main(int argc, char *argv[])
 			{
 				
 				/*数据将要被覆盖了,判断一行新的方式*/
-				if (1 == msg_table[i].data_not_updated)
+				if (1 == msg_table[i].data_not_updated && 0 == msg_table[i].not_write_csv)
 				{
 					row_count2++;
-					//printf("msg_id=%d\n", msg_id);
-					/*此处格式化成字符，写入CSV文件*/
 					
+					/*此处格式化成字符，写入CSV文件*/
 					#if (NEW_LINE_MODE == 2)
 					if (write_row_data_ascii(p_csv_file) < 0)
 					{
@@ -498,7 +510,9 @@ int main(int argc, char *argv[])
 		{
 			if ((msg_table[i].body.length - LOG_PACKET_HEADER_LEN) == sizeof(struct log_INFO_s))
 			{
-				struct log_INFO_s *p_info = (struct log_INFO_s *)msg_table[i].p_data ;
+				struct log_INFO_s *p_info = (struct log_INFO_s *)msg_table[i].p_data;
+				
+				printf("\n**************devive info*****************\n");
 				printf("uid:%s\n", p_info->fc_uid);
 				printf("fc_ver:%s\n", p_info->fc_ver);
 				printf("amu_ver:%s\n", p_info->amu_ver);
@@ -506,6 +520,7 @@ int main(int argc, char *argv[])
 				printf("uav_type:%d\n", p_info->uav_type);
 				printf("system_type:%d\n", p_info->system_type);
 				printf("ability:0x%x\n", p_info->ability);
+				printf("*****************************************\n");
 			}
 			else
 			{
@@ -518,8 +533,11 @@ int main(int argc, char *argv[])
 			if ((msg_table[i].body.length - LOG_PACKET_HEADER_LEN) == sizeof(struct log_VER_s))
 			{
 				struct log_VER_s *p_ver = (struct log_VER_s *)msg_table[i].p_data ;
+				
+				printf("\n**************VERSION*****************\n");
 				printf("arch:%s\n", p_ver->arch);
 				printf("fw_git:%s\n", p_ver->fw_git);
+				printf("*****************************************\n");
 
 			}
 			else
