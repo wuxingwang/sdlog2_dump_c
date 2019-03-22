@@ -279,11 +279,13 @@ uint8_t * write_var_ascii(FILE *p_file, char type, uint8_t *p)
 
 		case 'e':	
 		case 'i':
-		case 'L':
 			fprintf(p_file, "%d", *((int32_t*)p));
 			len = 4;
 			break;
-			
+		case 'L':
+			fprintf(p_file, "%.7f", (*((int32_t*)p))*1e-7);
+			len = 4;
+			break;
 		case 'E':
 		case 'I':
 			fprintf(p_file, "%u", *((uint32_t*)p));
